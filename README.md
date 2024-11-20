@@ -4,7 +4,9 @@ Transac AI project is geared towards generation of enriched summaries and insigh
 
 To demonstrate the Transac AI project, there was requirement of a client system where transactions are happening in real-time. The Transac AI project does not concern itself with how transactions are captured. This abstraction is supported through the [Prompt Builder Service (PBS)](https://github.com/pranav-kural/transacai-prompt-builder-service). A client can easily add their own source of transaction records by extending the [PrimaryRecordsDB](https://github.com/pranav-kural/transacai-prompt-builder-service/blob/main/src/records/primary_records_db.py) class.
 
-However, to simulate this real-time transaction data, there was a need for a service that would inject transactions into the [Supabase](https://supabase.com/)-hosted test `records` database, imitating the real-time transactions being made by customers or employees.
+However, to simulate this real-time transaction data, there was a need for a service that would inject transactions into the [Supabase](https://supabase.com/)-hosted test `records` database, imitating the real-time transactions being made by customers or employees. This is where the Transac AI Demo Transactions Injector project comes into play. Below is a high-level overview of the architecture.
+
+![transac-ai-demo-inj-arch](https://github.com/user-attachments/assets/e60286df-bda0-44a3-a013-07f165a519d7)
 
 ## Overview
 
