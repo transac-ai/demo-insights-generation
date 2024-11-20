@@ -1,0 +1,13 @@
+.env
+.venv
+.vscode/
+.DS_Store
+
+# packaged Lambda code
+lambda_package.zip
+
+# Terraform
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+.terraform.lock.hcl
