@@ -81,6 +81,8 @@ resource "aws_lambda_function" "inject_sample_transactions" {
 
   layers = [aws_lambda_layer_version.lambda_layer.arn]
 
+  timeout = 10
+
   environment {
     variables = {
       SUPABASE_URL   = var.SUPABASE_URL
