@@ -55,7 +55,15 @@ resource "aws_iam_role_policy" "lambda_policy" {
   })
 }
 
-data "archive_file" "lambda" {
+
+resource "aws_lambda_layer_version" "lambda_layer" {
+  filename   = "packages/transac_ai_injector_layer.zip"
+  layer_name = "TransacAIInjectorLayer"
+
+  compatible_runtimes = ["python3.13"]
+}
+
+data "archive_file" "lambda_code" {
   type        = "zip"
   source_file = "../lambda/core.py"
   output_path = "demo_injector_package.zip"
@@ -68,8 +76,10 @@ resource "aws_lambda_function" "inject_sample_transactions" {
   runtime       = "python3.13"
   architectures = ["arm64"]
 
-  filename = "demo_injector_package.zip"
-  source_code_hash = data.archive_file.lambda.output_base64sha256
+  filename         = "demo_injector_package.zip"
+  source_code_hash = data.archive_file.lambda_code.output_base64sha256
+
+  layers = [aws_lambda_layer_version.lambda_layer.arn]
 
   environment {
     variables = {
