@@ -1,11 +1,4 @@
 terraform {
-  cloud {
-    organization = "transac-ai"
-    workspaces {
-      name = "transacai-demo"
-    }
-  }
-
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -62,6 +55,12 @@ resource "aws_iam_role_policy" "lambda_policy" {
   })
 }
 
+data "archive_file" "lambda" {
+  type        = "zip"
+  source_file = "../lambda/core.py"
+  output_path = "demo_injector_package.zip"
+}
+
 resource "aws_lambda_function" "inject_sample_transactions" {
   function_name = "inject_sample_transactions_handler"
   role          = aws_iam_role.lambda_role.arn
@@ -69,13 +68,14 @@ resource "aws_lambda_function" "inject_sample_transactions" {
   runtime       = "python3.13"
   architectures = ["arm64"]
 
-  s3_bucket = "transacai-demo"
-  s3_key    = "demo_injector_package.zip"
+  filename = "demo_injector_package.zip"
+  source_code_hash = data.archive_file.lambda.output_base64sha256
 
   environment {
     variables = {
       SUPABASE_URL   = var.SUPABASE_URL
       SUPABASE_KEY   = var.SUPABASE_KEY
+      SUPABASE_TABLE = var.SUPABASE_TABLE
       SNS_TOPIC_ARN  = var.SNS_TOPIC_ARN
       S3_BUCKET_NAME = var.S3_BUCKET_NAME
       S3_KEY         = var.S3_KEY
@@ -104,7 +104,7 @@ resource "aws_iam_role" "eventbridge_role" {
       {
         Effect = "Allow"
         Principal = {
-          Service = "events.amazonaws.com"
+          Service = "scheduler.amazonaws.com"
         }
         Action = "sts:AssumeRole"
       }
@@ -112,10 +112,8 @@ resource "aws_iam_role" "eventbridge_role" {
   })
 }
 
-resource "aws_iam_role_policy" "eventbridge_policy" {
+resource "aws_iam_policy" "eventbridge_policy" {
   name = "eventbridge_policy"
-  role = aws_iam_role.lambda_role.id
-
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -131,6 +129,11 @@ resource "aws_iam_role_policy" "eventbridge_policy" {
       }
     ]
   })
+}
+
+resource "aws_iam_role_policy_attachment" "eventbridge_policy_attachment" {
+  role       = aws_iam_role.eventbridge_role.name
+  policy_arn = aws_iam_policy.eventbridge_policy.arn
 }
 
 resource "aws_scheduler_schedule" "transacai_demo_injector_schedule" {
