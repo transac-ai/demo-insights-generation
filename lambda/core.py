@@ -1,3 +1,4 @@
+# Source: https://github.com/pranav-kural/transacai-demo-injector/blob/main/lambda/core.py
 import os
 import csv
 import random
@@ -26,7 +27,7 @@ def inject_sample_transactions_handler(event, context):
   required_env_vars = [
     "SUPABASE_URL",
     "SUPABASE_KEY",
-    "SUPABASE_TABLE_NAME",
+    "SUPABASE_TABLE",
     "SNS_TOPIC_ARN",
     "S3_BUCKET_NAME",
     "S3_KEY"
@@ -87,7 +88,7 @@ def inject_sample_transactions_handler(event, context):
   Send bulk insert request to Supabase through REST API
   """
   # URL with table name
-  url = os.environ["SUPABASE_URL"] + "/rest/v1/" + os.environ["SUPABASE_TABLE_NAME"]
+  url = os.environ["SUPABASE_URL"] + "/rest/v1/" + os.environ["SUPABASE_TABLE"]
   headers = {
       "Content-Type": "text/csv",
       "apikey": os.environ["SUPABASE_KEY"],
