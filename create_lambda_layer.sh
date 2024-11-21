@@ -13,10 +13,11 @@ pip3 install --platform=macosx_11_0_arm64 --only-binary=:all: -r ../../requireme
 cd ..
 
 # remove older zip file
-rm -f transac_ai_injector_layer.zip
+rm -f ../terraform/packages/transac_ai_injector_layer.zip
 
 # Zip the contents of the python directory
-zip -r transac_ai_injector_layer.zip .
+zip -r ../terraform/packages/transac_ai_injector_layer.zip .
 
-# Remove the python directory
-rm -r python
+# Remove the layers/python directory
+cd ..
+rm -rf layers

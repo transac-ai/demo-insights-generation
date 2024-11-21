@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# NOTE: this script isn't used any longer. Archive file is created through Terraform.
+
 # Create a temporary directory
 mkdir tmp
 
