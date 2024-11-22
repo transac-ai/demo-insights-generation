@@ -7,9 +7,9 @@ export $(grep -v '^#' ../.env | xargs)
 terraform destroy \
   -var "AWS_ACCESS_KEY=$AWS_ACCESS_KEY" \
   -var "AWS_SECRET_KEY=$AWS_SECRET_KEY" \
-  -var "SUPABASE_URL=$SUPABASE_URL" \
-  -var "SUPABASE_KEY=$SUPABASE_KEY" \
-  -var "SUPABASE_TABLE=$SUPABASE_TABLE" \
-  -var "SNS_TOPIC_ARN=$SNS_TOPIC_ARN" \
-  -var "S3_BUCKET_NAME=$S3_BUCKET_NAME" \
-  -var "S3_KEY=$S3_KEY"
+  -var "WMS_API_URL=$WMS_API_URL" \
+  -var "WMS_API_KEY=$WMS_API_KEY" \
+  -var "RECORDS_SOURCE_ID=$RECORDS_SOURCE_ID" \
+  -var "PROMPT_TEMPLATES_SOURCE_ID=$PROMPT_TEMPLATES_SOURCE_ID" \
+  -var "PROMPT_ID=$PROMPT_ID" \
+  -var "CLIENT_ID=$CLIENT_ID" \
