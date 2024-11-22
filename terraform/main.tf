@@ -16,7 +16,7 @@ provider "aws" {
 }
 
 resource "aws_iam_role" "lambda_role" {
-  name = "lambda_role"
+  name = "demo_insight_generation_lambda_role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -34,7 +34,7 @@ resource "aws_iam_role" "lambda_role" {
 }
 
 resource "aws_iam_role_policy" "lambda_policy" {
-  name = "lambda_policy"
+  name = "demo_insight_generation_lambda_policy"
   role = aws_iam_role.lambda_role.id
 
   policy = jsonencode({
@@ -45,8 +45,6 @@ resource "aws_iam_role_policy" "lambda_policy" {
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents",
-          "s3:GetObject",
-          "sns:Publish"
         ]
         Effect   = "Allow"
         Resource = "*"
@@ -55,60 +53,32 @@ resource "aws_iam_role_policy" "lambda_policy" {
   })
 }
 
-
-resource "aws_lambda_layer_version" "lambda_layer" {
-  filename   = "packages/transac_ai_injector_layer.zip"
-  layer_name = "TransacAIInjectorLayer"
-
-  compatible_runtimes = ["python3.13"]
-}
-
-data "archive_file" "lambda_code" {
-  type        = "zip"
-  source_file = "../lambda/core.py"
-  output_path = "demo_injector_package.zip"
-}
-
-resource "aws_lambda_function" "inject_sample_transactions" {
-  function_name = "inject_sample_transactions_handler"
+resource "aws_lambda_function" "insights_generation_lambda" {
+  function_name = "insights_generation_lambda_handler"
   role          = aws_iam_role.lambda_role.arn
-  handler       = "core.inject_sample_transactions_handler"
-  runtime       = "python3.13"
+  handler       = "index.insights_generation_handler"
+  runtime       = "nodejs22.x"
   architectures = ["arm64"]
 
-  filename         = "demo_injector_package.zip"
-  source_code_hash = data.archive_file.lambda_code.output_base64sha256
-
-  layers = [aws_lambda_layer_version.lambda_layer.arn]
+  filename         = "package/insights_generation_lambda_pkg.zip"
+  source_code_hash = filebase64sha256("package/insights_generation_lambda_pkg.zip")
 
   timeout = 10
 
   environment {
     variables = {
-      SUPABASE_URL   = var.SUPABASE_URL
-      SUPABASE_KEY   = var.SUPABASE_KEY
-      SUPABASE_TABLE = var.SUPABASE_TABLE
-      SNS_TOPIC_ARN  = var.SNS_TOPIC_ARN
-      S3_BUCKET_NAME = var.S3_BUCKET_NAME
-      S3_KEY         = var.S3_KEY
+      WMS_API_URL=var.WMS_API_URL
+      WMS_API_KEY=var.WMS_API_KEY
+      RECORDS_SOURCE_ID=var.RECORDS_SOURCE_ID
+      PROMPT_TEMPLATES_SOURCE_ID=var.PROMPT_TEMPLATES_SOURCE_ID
+      PROMPT_ID=var.PROMPT_ID
+      CLIENT_ID=var.CLIENT_ID
     }
   }
 }
 
-resource "aws_sns_topic" "default" {
-  name = "transacai-demo-injector-job-status"
-}
-
-resource "aws_lambda_permission" "allow_sns_invoke" {
-  statement_id  = "AllowExecutionFromSNS"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.inject_sample_transactions.function_name
-  principal     = "sns.amazonaws.com"
-  source_arn    = aws_sns_topic.default.arn
-}
-
 resource "aws_iam_role" "eventbridge_role" {
-  name = "eventbridge_role"
+  name = "insights_generation_eventbridge_role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -125,7 +95,7 @@ resource "aws_iam_role" "eventbridge_role" {
 }
 
 resource "aws_iam_policy" "eventbridge_policy" {
-  name = "eventbridge_policy"
+  name = "insights_generation_eventbridge_policy"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -135,8 +105,8 @@ resource "aws_iam_policy" "eventbridge_policy" {
           "lambda:InvokeFunction"
         ]
         Resource = [
-          aws_lambda_function.inject_sample_transactions.arn,
-          "${aws_lambda_function.inject_sample_transactions.arn}:*"
+          aws_lambda_function.insights_generation_lambda.arn,
+          "${aws_lambda_function.insights_generation_lambda.arn}:*"
         ]
       }
     ]
@@ -148,8 +118,8 @@ resource "aws_iam_role_policy_attachment" "eventbridge_policy_attachment" {
   policy_arn = aws_iam_policy.eventbridge_policy.arn
 }
 
-resource "aws_scheduler_schedule" "transacai_demo_injector_schedule" {
-  name       = "transacai-demo-injector-schedule"
+resource "aws_scheduler_schedule" "demo_insights_generation_schedule" {
+  name       = "demo-insights-generation-schedule"
   group_name = "default"
 
   flexible_time_window {
@@ -159,7 +129,7 @@ resource "aws_scheduler_schedule" "transacai_demo_injector_schedule" {
   schedule_expression = "rate(1 minute)"
 
   target {
-    arn      = aws_lambda_function.inject_sample_transactions.arn
+    arn      = aws_lambda_function.insights_generation_lambda.arn
     role_arn = aws_iam_role.eventbridge_role.arn
   }
 }
@@ -167,7 +137,7 @@ resource "aws_scheduler_schedule" "transacai_demo_injector_schedule" {
 resource "aws_lambda_permission" "allow_eventbridge_invoke" {
   statement_id  = "AllowExecutionFromEventBridge"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.inject_sample_transactions.function_name
+  function_name = aws_lambda_function.insights_generation_lambda.function_name
   principal     = "events.amazonaws.com"
-  source_arn    = aws_scheduler_schedule.transacai_demo_injector_schedule.arn
+  source_arn    = aws_scheduler_schedule.demo_insights_generation_schedule.arn
 }
