@@ -54,25 +54,25 @@ resource "aws_iam_role_policy" "lambda_policy" {
 }
 
 resource "aws_lambda_function" "insights_generation_lambda" {
-  function_name = "insights_generation_lambda_handler"
+  function_name = "insights_generation_handler"
   role          = aws_iam_role.lambda_role.arn
   handler       = "index.insights_generation_handler"
   runtime       = "nodejs22.x"
   architectures = ["arm64"]
 
-  filename         = "package/insights_generation_lambda_pkg.zip"
-  source_code_hash = filebase64sha256("package/insights_generation_lambda_pkg.zip")
+  filename         = "insights_generation_lambda_pkg.zip"
+  source_code_hash = filebase64sha256("insights_generation_lambda_pkg.zip")
 
   timeout = 10
 
   environment {
     variables = {
-      WMS_API_URL=var.WMS_API_URL
-      WMS_API_KEY=var.WMS_API_KEY
-      RECORDS_SOURCE_ID=var.RECORDS_SOURCE_ID
-      PROMPT_TEMPLATES_SOURCE_ID=var.PROMPT_TEMPLATES_SOURCE_ID
-      PROMPT_ID=var.PROMPT_ID
-      CLIENT_ID=var.CLIENT_ID
+      WMS_API_URL                = var.WMS_API_URL
+      WMS_API_KEY                = var.WMS_API_KEY
+      RECORDS_SOURCE_ID          = var.RECORDS_SOURCE_ID
+      PROMPT_TEMPLATES_SOURCE_ID = var.PROMPT_TEMPLATES_SOURCE_ID
+      PROMPT_ID                  = var.PROMPT_ID
+      CLIENT_ID                  = var.CLIENT_ID
     }
   }
 }
@@ -126,7 +126,7 @@ resource "aws_scheduler_schedule" "demo_insights_generation_schedule" {
     mode = "OFF"
   }
 
-  schedule_expression = "rate(1 minute)"
+  schedule_expression = "rate(30 minute)"
 
   target {
     arn      = aws_lambda_function.insights_generation_lambda.arn
